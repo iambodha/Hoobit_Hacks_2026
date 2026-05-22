@@ -12,8 +12,8 @@ const sectionIds = [
   "theme-lock",
 ] as const;
 
-const SOCIAL_PROOF_TILE_COUNT = 14;
-const socialProofAvatarFiles = [
+const SOCIAL_PROOF_ROW_COUNT = 4;
+const fallbackSocialProofAvatarFiles = [
   "abdulkadernafees.png",
   "abhinavmgarg.png",
   "aditisingh2310.png",
@@ -30,25 +30,91 @@ const socialProofAvatarFiles = [
   "baruauttapal005.png",
 ] as const;
 
+type SocialProofTile = {
+  key: string;
+  tone: number;
+  avatarSrc: string;
+};
+
+type SocialProofRowGroup = {
+  key: string;
+  tiles: SocialProofTile[];
+};
+
+type AvatarManifest = {
+  files?: string[];
+};
+
 const socialProofRows = {
   top: [
-    { key: "top-1", direction: "right", speed: 26, toneOffset: 0 },
-    { key: "top-2", direction: "left", speed: 20, toneOffset: 1 },
+    { key: "top-1", direction: "right", speed: 42, toneOffset: 0 },
+    { key: "top-2", direction: "left", speed: 36, toneOffset: 1 },
   ],
   bottom: [
-    { key: "bot-1", direction: "left", speed: 18, toneOffset: 2 },
-    { key: "bot-2", direction: "right", speed: 24, toneOffset: 0 },
+    { key: "bot-1", direction: "left", speed: 34, toneOffset: 2 },
+    { key: "bot-2", direction: "right", speed: 40, toneOffset: 0 },
   ],
 };
 
-const socialProofTiles = Array.from(
-  { length: SOCIAL_PROOF_TILE_COUNT },
-  (_, index) => ({
-    key: `tile-${index}`,
-    tone: (index % 4) + 1,
-    avatarSrc: `/community-avatars/${socialProofAvatarFiles[index]}`,
-  }),
-);
+const socialProofRowDefinitions = [
+  ...socialProofRows.top,
+  ...socialProofRows.bottom,
+] as const;
+
+function shuffleValues<T>(values: T[]): T[] {
+  const shuffled = [...values];
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+
+  return shuffled;
+}
+
+function buildSocialProofRowGroups(files: string[]): SocialProofRowGroup[] {
+  const shuffledFiles = shuffleValues(files);
+  const baseChunkSize = Math.floor(shuffledFiles.length / SOCIAL_PROOF_ROW_COUNT);
+  const remainder = shuffledFiles.length % SOCIAL_PROOF_ROW_COUNT;
+  let startIndex = 0;
+
+  return socialProofRowDefinitions.map((row, rowIndex) => {
+    const chunkSize = baseChunkSize + (rowIndex < remainder ? 1 : 0);
+    const rowFiles = shuffledFiles.slice(startIndex, startIndex + chunkSize);
+    startIndex += chunkSize;
+
+    return {
+      key: row.key,
+      tiles: rowFiles.map((fileName, tileIndex) => ({
+        key: `${row.key}-${tileIndex}-${fileName}`,
+        tone: (tileIndex % 4) + 1,
+        avatarSrc: `/community-avatars/${fileName}`,
+      })),
+    };
+  });
+}
+
+function buildFallbackSocialProofRowGroups(): SocialProofRowGroup[] {
+  const files = [...fallbackSocialProofAvatarFiles];
+  const baseChunkSize = Math.floor(files.length / SOCIAL_PROOF_ROW_COUNT);
+  const remainder = files.length % SOCIAL_PROOF_ROW_COUNT;
+  let startIndex = 0;
+
+  return socialProofRowDefinitions.map((row, rowIndex) => {
+    const chunkSize = baseChunkSize + (rowIndex < remainder ? 1 : 0);
+    const rowFiles = files.slice(startIndex, startIndex + chunkSize);
+    startIndex += chunkSize;
+
+    return {
+      key: row.key,
+      tiles: rowFiles.map((fileName, tileIndex) => ({
+        key: `${row.key}-${tileIndex}-${fileName}`,
+        tone: (tileIndex % 4) + 1,
+        avatarSrc: `/community-avatars/${fileName}`,
+      })),
+    };
+  });
+}
 
 const hackathonQuestions = [
   {
@@ -99,10 +165,44 @@ export default function Home() {
   const [showAfterIntro, setShowAfterIntro] = useState(false);
   const [themeLockShakeTick, setThemeLockShakeTick] = useState(0);
   const [showThemePopup, setShowThemePopup] = useState(false);
+  const [socialProofRowGroups, setSocialProofRowGroups] = useState<SocialProofRowGroup[]>(
+    () => buildFallbackSocialProofRowGroups(),
+  );
   const snapLockUntilRef = useRef(0);
   const snapReleaseTimerRef = useRef<number | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadAvatarManifest = async () => {
+      try {
+        const response = await fetch("/community-avatars/manifest.json", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const manifest = (await response.json()) as AvatarManifest;
+
+        if (!manifest.files || manifest.files.length === 0) {
+          return;
+        }
+
+        setSocialProofRowGroups(buildSocialProofRowGroups(manifest.files));
+      } catch {
+        return;
+      }
+    };
+
+    void loadAvatarManifest();
+
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!showThemePopup) {
@@ -308,14 +408,18 @@ export default function Home() {
       >
         <div className="social-proof-stage">
           <div className="social-proof-row-group" aria-hidden="true">
-            {socialProofRows.top.map((row) => (
+            {socialProofRows.top.map((row) => {
+              const rowTiles =
+                socialProofRowGroups.find((group) => group.key === row.key)?.tiles ?? [];
+
+              return (
               <div key={row.key} className="social-proof-row-wrap">
                 <div
                   className={`social-proof-row-track social-proof-row-track-${row.direction}`}
                   style={{ animationDuration: `${row.speed}s` }}
                 >
                   {Array.from({ length: 2 }).map((_, copyIndex) =>
-                    socialProofTiles.map((tile, tileIndex) => (
+                    rowTiles.map((tile, tileIndex) => (
                       <span
                         key={`${row.key}-${copyIndex}-${tile.key}`}
                         className={`social-proof-box social-proof-box-tone-${
@@ -336,7 +440,8 @@ export default function Home() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="social-proof-center">
@@ -354,14 +459,18 @@ export default function Home() {
           </div>
 
           <div className="social-proof-row-group" aria-hidden="true">
-            {socialProofRows.bottom.map((row) => (
+            {socialProofRows.bottom.map((row) => {
+              const rowTiles =
+                socialProofRowGroups.find((group) => group.key === row.key)?.tiles ?? [];
+
+              return (
               <div key={row.key} className="social-proof-row-wrap">
                 <div
                   className={`social-proof-row-track social-proof-row-track-${row.direction}`}
                   style={{ animationDuration: `${row.speed}s` }}
                 >
                   {Array.from({ length: 2 }).map((_, copyIndex) =>
-                    socialProofTiles.map((tile, tileIndex) => (
+                    rowTiles.map((tile, tileIndex) => (
                       <span
                         key={`${row.key}-${copyIndex}-${tile.key}`}
                         className={`social-proof-box social-proof-box-tone-${
@@ -382,7 +491,8 @@ export default function Home() {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
