@@ -1,42 +1,103 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 const defaultLinks = [
-  { label: "Registration", href: "#registration" },
-  { label: "Discord", href: "#discord" },
-  { label: "Instagram", href: "#instagram" },
-  { label: "YouTube", href: "#youtube" },
-  { label: "LinkedIn", href: "#linkedin" },
+  {
+    label: "Registration",
+    href: "#registration",
+    tone: "registration",
+  },
+  {
+    label: "Discord",
+    href: "#discord",
+    tone: "discord",
+  },
+  {
+    label: "Instagram",
+    href: "#instagram",
+    tone: "instagram",
+  },
+  {
+    label: "YouTube",
+    href: "#youtube",
+    tone: "youtube",
+  },
+  {
+    label: "LinkedIn",
+    href: "#linkedin",
+    tone: "linkedin",
+  },
 ];
 
+const toneStyles = {
+  registration: {
+    color: "#8effa6",
+    glow: "rgba(39, 255, 64, 0.22)",
+  },
+  discord: {
+    color: "#b6c0ff",
+    glow: "rgba(64, 78, 237, 0.22)",
+  },
+  instagram: {
+    color: "#ffb5da",
+    glow: "rgba(255, 67, 152, 0.22)",
+  },
+  youtube: {
+    color: "#ffb3b3",
+    glow: "rgba(255, 49, 49, 0.22)",
+  },
+  linkedin: {
+    color: "#9dd1ff",
+    glow: "rgba(10, 102, 194, 0.22)",
+  },
+} as const;
+
+type ToneName = keyof typeof toneStyles;
+
+function getToneStyle(tone?: string): CSSProperties {
+  const resolvedTone =
+    tone && tone in toneStyles
+      ? toneStyles[tone as ToneName]
+      : toneStyles.registration;
+
+  return {
+    "--nav-link-color": resolvedTone.color,
+    "--nav-link-glow": resolvedTone.glow,
+  } as CSSProperties;
+}
+
 type BottomHoverNavProps = {
+  className?: string;
   links?: ReadonlyArray<{
     label: string;
     href: string;
+    tone?: string;
   }>;
 };
 
-export function BottomHoverNav({ links = defaultLinks }: BottomHoverNavProps) {
+export function BottomHoverNav({
+  className = "",
+  links = defaultLinks,
+}: BottomHoverNavProps) {
   return (
-    <nav className="fixed inset-x-0 bottom-4 z-50 px-4 sm:bottom-6" aria-label="Social and registration links">
+    <nav
+      className={`fixed inset-x-0 bottom-4 z-50 px-4 sm:bottom-6 ${className}`.trim()}
+      aria-label="Social and registration links"
+    >
       <div className="mx-auto w-full max-w-4xl">
-        <div className="group pointer-events-auto rounded-full border border-white/12 bg-black/70 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-[#65ff6d]/35 hover:bg-black/85 sm:px-5">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between sm:gap-4">
-            <span className="text-[0.68rem] uppercase tracking-[0.35em] text-white/45 transition-colors duration-300 group-hover:text-[#65ff6d]/90">
-              Hover for links
-            </span>
-
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-              {links.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm uppercase tracking-[0.12em] text-white/80 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#65ff6d]/40 hover:bg-[#65ff6d]/10 hover:text-white"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+        <div className="bottom-hover-nav-shell pointer-events-auto">
+          {links.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              aria-label={link.label}
+              title={link.label}
+              className="nav-link-bar-item"
+              style={getToneStyle(link.tone)}
+            >
+              <span className="nav-link-bar-label">{link.label}</span>
+            </Link>
+          ))}
         </div>
       </div>
     </nav>

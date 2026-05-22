@@ -6,11 +6,16 @@ const TITLE = "Hoobit Hacks 2026";
 const TYPE_INTERVAL_MS = 165;
 const FLICKER_SETTLE_MS = 1000;
 
-export function TypewriterTitle() {
+type TypewriterTitleProps = {
+  onSettledComplete?: () => void;
+};
+
+export function TypewriterTitle({ onSettledComplete }: TypewriterTitleProps) {
   const [visibleCount, setVisibleCount] = useState(0);
   const [isSettled, setIsSettled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const hasStartedAudioRef = useRef(false);
+  const hasCalledCompleteRef = useRef(false);
 
   useEffect(() => {
     const audio = new Audio("/Effects/Sound_Typing.mp3");
@@ -60,16 +65,23 @@ export function TypewriterTitle() {
     };
   }, [visibleCount]);
 
+  useEffect(() => {
+    if (!isSettled || hasCalledCompleteRef.current) {
+      return;
+    }
+
+    hasCalledCompleteRef.current = true;
+    onSettledComplete?.();
+  }, [isSettled, onSettledComplete]);
+
   return (
     <h1
       className="relative min-h-[1em] w-full overflow-visible text-center text-[clamp(0.95rem,6vw,6rem)] font-normal uppercase leading-none tracking-[0.05em]"
       aria-label={TITLE}
     >
       <span className="typewriter-stage" aria-hidden="true">
-        <span
-          className={`typewriter-live terminal-title ${isSettled ? "" : "hero-flicker"}`.trim()}
-        >
-          {TITLE.slice(0, visibleCount)}
+        <span className={`typewriter-live ${isSettled ? "" : "hero-flicker"}`.trim()}>
+          <span className="terminal-title">{TITLE.slice(0, visibleCount)}</span>
           {!isSettled ? (
             <span className="typewriter-cursor" aria-hidden="true">
               _

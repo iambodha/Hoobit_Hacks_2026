@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "fetch:devpost-avatars": "python3 scripts/fetch_devpost_profile_images.py"
   },
   "dependencies": {
     "next": "16.2.6",
