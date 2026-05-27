@@ -4,27 +4,27 @@ import Link from "next/link";
 const defaultLinks = [
   {
     label: "Registration",
-    href: "#registration",
+    href: "https://hoobit-hacks-2026.devpost.com/",
     tone: "registration",
   },
   {
     label: "Discord",
-    href: "#discord",
+    href: "https://discord.gg/ZdZhurPz2b",
     tone: "discord",
   },
   {
     label: "Instagram",
-    href: "#instagram",
+    href: "https://www.instagram.com/hoobit_official/",
     tone: "instagram",
   },
   {
     label: "YouTube",
-    href: "#youtube",
+    href: "https://www.youtube.com/@hoobit.official",
     tone: "youtube",
   },
   {
     label: "LinkedIn",
-    href: "#linkedin",
+    href: "https://www.linkedin.com/company/112567391/",
     tone: "linkedin",
   },
 ];
@@ -93,6 +93,8 @@ export function BottomHoverNav({
               aria-label={link.label}
               title={link.label}
               className="nav-link-bar-item"
+              target="_blank"
+              rel="noopener noreferrer"
               style={getToneStyle(link.tone)}
             >
               <span className="nav-link-bar-label">{link.label}</span>
