@@ -11,6 +11,14 @@ const mojangles = localFont({
 export const metadata: Metadata = {
   title: "Hoobit Hacks 2026",
   description: "Terminal-inspired launch site baseline for Hoobit Hacks 2026.",
+  icons: {
+    icon: "/hoobit-hacks-logo.png",
+    shortcut: "/hoobit-hacks-logo.png",
+    apple: "/hoobit-hacks-logo.png",
+  },
+  openGraph: {
+    images: "/hoobit-hacks-logo.png",
+  },
 };
 
 export default function RootLayout({
